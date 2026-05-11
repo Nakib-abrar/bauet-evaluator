@@ -1,8 +1,8 @@
 # BAUET Faculty Evaluation Automator
 
-[![Watch the demo](https://img.youtube.com/vi/AF9642FlvXU/maxresdefault.jpg)](https://youtu.be/AF9642FlvXU)
+https://github.com/Nakib-abrar/bauet-evaluator/releases/download/v3.3.1/bauet-demo.mp4
 
-> **▶ [Watch the 23-second demo on YouTube](https://youtu.be/AF9642FlvXU)** — see the extension auto-fill 14 evaluations in seconds.
+> **▶ [Also on YouTube](https://youtu.be/AF9642FlvXU)** — see the extension auto-fill 14 evaluations in seconds.
 
 A Chrome Extension (Manifest V3) that automates the BAUET IEMS *Faculty
 Performance Evaluation* workflow at `iems.bauet.ac.bd`.
