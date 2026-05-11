@@ -41,20 +41,30 @@ bauet-evaluator/
 └── README.md
 ```
 
-## Installation (load unpacked)
+## Installation
 
-1. Clone or download this repository.
-   ```bash
-   git clone https://github.com/<your-user>/bauet-evaluator.git
-   ```
-2. Open Chrome (or any Chromium browser) and visit `chrome://extensions`.
-3. Toggle **Developer mode** on (top-right corner).
-4. Click **Load unpacked** and select the `bauet-evaluator/` folder.
-5. The extension icon should now appear in your toolbar. Pin it for easy access.
+### Quick download (ZIP)
 
-> ⚠️ The manifest references `icon.png` for the toolbar icon. Drop any
-> 128×128 PNG named `icon.png` into the extension folder, or remove the
-> `default_icon` block from `manifest.json` if you don't want one.
+Download the latest release as a ZIP file, extract it, and load into Chrome:
+
+1. **[Download ZIP](https://github.com/Nakib-abrar/bauet-evaluator/archive/refs/heads/main.zip)**
+2. Extract the ZIP to any folder (e.g., `~/Downloads/bauet-evaluator-main/`).
+3. Open Chrome and visit `chrome://extensions`.
+4. Toggle **Developer mode** on (top-right corner).
+5. Click **Load unpacked** and select the extracted folder.
+6. The extension icon should now appear in your toolbar. Pin it for easy access.
+
+### Or clone from GitHub
+
+```bash
+git clone https://github.com/Nakib-abrar/bauet-evaluator.git
+cd bauet-evaluator
+```
+
+Then follow steps 3–6 above.
+
+> ⚠️ The extension includes PNG icons (icon16.png, icon48.png, icon128.png)
+> for the toolbar. These are already in the repo, so no setup needed.
 
 ## Usage
 
