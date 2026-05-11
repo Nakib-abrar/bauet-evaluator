@@ -51,7 +51,7 @@ bauet-evaluator/
 
 The cleanest way — grab the packaged extension from the latest release:
 
-1. **[Download bauet-evaluator-v3.3.1.zip](https://github.com/Nakib-abrar/bauet-evaluator/releases/download/v3.3.1/bauet-evaluator-v3.3.1.zip)**
+1. **[Download bauet-evaluator-v3.4.0.zip](https://github.com/Nakib-abrar/bauet-evaluator/releases/download/v3.4.0/bauet-evaluator-v3.4.0.zip)**
 2. Extract the ZIP — you'll get a `bauet-evaluator/` folder.
 3. Open Chrome and visit `chrome://extensions`.
 4. Toggle **Developer mode** on (top-right corner).
