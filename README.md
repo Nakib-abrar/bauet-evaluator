@@ -18,7 +18,7 @@ until none remain.
 
 - **Five-point rating selector** — Outstanding / Very Good / Good / Poor / Very Poor.
 - **Mandatory comment** — required for every submission (default: `comment`).
-- **Live status display** — `Evaluating 3 of 17 — Tanvir Anjom Siddique...`
+- **Live status display** — `Evaluating 3 of 17 — ...`
 - **Skips already-submitted evaluations** automatically.
 - **Resumes across page navigations** — state is stored in
   `chrome.storage.local`, so the run survives every `FacultyList ↔ Submit`
