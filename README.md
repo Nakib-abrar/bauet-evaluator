@@ -158,28 +158,6 @@ machine.
   `background.js` show in the service-worker DevTools (link on the
   extension's card).
 
-## Design tokens (Wise-inspired)
-
-The full token table lives in [`styles.css`](styles.css). Highlights:
-
-| Token | Value | Use |
-| --- | --- | --- |
-| `--color-accent` | `#9fe870` | Primary CTA background, progress bar, focus ring tint |
-| `--color-accent-text` | `#163300` | Text on green CTA, select caret, toggle thumb when on |
-| `--color-accent-soft` | `#e2f6d5` | "Required" badge background |
-| `--color-text` | `#0e0f0c` | Near-black body text |
-| `--color-bg` | `#fafbf7` | Warm off-white canvas |
-| `--ring` | `rgba(14,15,12,0.12) 0 0 0 1px` | Standard 1px ring shadow on cards/inputs |
-| `--r-pill` | `9999px` | Buttons, status dot pulse, badges |
-| `--r-large` | `30px` | Status card |
-| Display | weight 900, line-height 0.85 | "Faculty / Evaluator" headline |
-| Body | weight 600 default | All UI text |
-| Button hover | `scale(1.05)` | Wise's signature physical-growth interaction |
-
-Fonts: pure system stack (`-apple-system`, `Segoe UI`, etc.) so the popup
-loads instantly with no CSP changes — `Wise Sans` and `Inter` are listed
-first and used automatically if installed.
-
 ## Disclaimer
 
 This extension is provided for personal convenience. You remain
