@@ -63,9 +63,6 @@ cd bauet-evaluator
 
 Then follow steps 3–6 above.
 
-> ⚠️ The extension includes PNG icons (icon16.png, icon48.png, icon128.png)
-> for the toolbar. These are already in the repo, so no setup needed.
-
 ## Usage
 
 1. Log into [iems.bauet.ac.bd](https://iems.bauet.ac.bd) and navigate to
