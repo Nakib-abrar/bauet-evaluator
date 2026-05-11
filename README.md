@@ -47,12 +47,12 @@ bauet-evaluator/
 
 ## Installation
 
-### Quick download (ZIP)
+### Quick install (latest release)
 
-Download the latest release as a ZIP file, extract it, and load into Chrome:
+The cleanest way — grab the packaged extension from the latest release:
 
-1. **[Download ZIP](https://github.com/Nakib-abrar/bauet-evaluator/archive/refs/heads/main.zip)**
-2. Extract the ZIP to any folder (e.g., `~/Downloads/bauet-evaluator-main/`).
+1. **[Download bauet-evaluator-v3.3.1.zip](https://github.com/Nakib-abrar/bauet-evaluator/releases/download/v3.3.1/bauet-evaluator-v3.3.1.zip)**
+2. Extract the ZIP — you'll get a `bauet-evaluator/` folder.
 3. Open Chrome and visit `chrome://extensions`.
 4. Toggle **Developer mode** on (top-right corner).
 5. Click **Load unpacked** and select the extracted folder.
