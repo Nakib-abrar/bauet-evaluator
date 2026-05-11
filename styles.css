@@ -123,7 +123,8 @@ html, body, .control, .status-card, .toggle-track, .toggle-thumb,
 }
 
 [data-theme="dark"] .status-card,
-[data-theme="dark"] .theme-toggle {
+[data-theme="dark"] .theme-toggle,
+[data-theme="dark"] .github-link {
   background: #1f201d;
 }
 
@@ -174,10 +175,10 @@ html, body {
 /*  Theme toggle — sits absolute in the top-right of the side panel    */
 /* ------------------------------------------------------------------ */
 
-.theme-toggle {
+.theme-toggle,
+.github-link {
   position: absolute;
   top: 14px;
-  right: 14px;
   z-index: 10;
   width: 32px;
   height: 32px;
@@ -191,6 +192,7 @@ html, body {
   color: var(--color-text);
   box-shadow: var(--ring);
   cursor: pointer;
+  text-decoration: none;
   transition:
     transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1),
     background 0.15s ease,
@@ -198,9 +200,15 @@ html, body {
     color 0.15s ease;
 }
 
-.theme-toggle:hover { transform: scale(1.06); box-shadow: var(--ring-strong); }
-.theme-toggle:active { transform: scale(0.94); }
-.theme-toggle:focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.theme-toggle { right: 14px; }
+.github-link { right: 54px; }
+
+.theme-toggle:hover,
+.github-link:hover { transform: scale(1.06); box-shadow: var(--ring-strong); }
+.theme-toggle:active,
+.github-link:active { transform: scale(0.94); }
+.theme-toggle:focus-visible,
+.github-link:focus-visible { outline: none; box-shadow: var(--ring-focus); }
 
 .theme-toggle .icon { display: none; }
 .theme-toggle .icon-moon { display: block; }                   /* light mode → show moon (action: go dark) */
