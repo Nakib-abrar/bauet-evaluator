@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BAUET Faculty Evaluator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <button
+      id="theme-toggle"
+      class="theme-toggle"
+      type="button"
+      aria-label="Toggle dark mode"
+      title="Toggle dark mode"
+    >
+      <svg class="icon icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
+      <svg class="icon icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4" />
+        <line x1="12" y1="2" x2="12" y2="4" />
+        <line x1="12" y1="20" x2="12" y2="22" />
+        <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
+        <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
+        <line x1="2" y1="12" x2="4" y2="12" />
+        <line x1="20" y1="12" x2="22" y2="12" />
+        <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
+        <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
+      </svg>
+    </button>
+
+    <div class="scroll">
+      <header class="hero">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <h1 class="display">Faculty<br/>Evaluator</h1>
+        <p class="lede">Auto-fill &amp; submit every pending evaluation.</p>
+      </header>
+
+      <div id="page-banner" class="banner banner-warn" hidden>
+        <span class="banner-icon" aria-hidden="true">!</span>
+        <div class="banner-body">
+          <p class="banner-title">Open the FacultyList page</p>
+          <p class="banner-text">Go to iems.bauet.ac.bd → Student → Faculty Evaluation → Faculty List to enable Start.</p>
+        </div>
+      </div>
+
+      <section class="field">
+        <label class="label" for="rating">Rating</label>
+        <div class="select-wrap">
+          <select id="rating" class="control select">
+            <option value="Outstanding">Outstanding</option>
+            <option value="Very Good">Very Good</option>
+            <option value="Good">Good</option>
+            <option value="Poor">Poor</option>
+            <option value="Very Poor">Very Poor</option>
+            <option value="Random" selected>Random — Very Good / Good / Poor</option>
+          </select>
+          <span class="select-caret" aria-hidden="true">▾</span>
+        </div>
+        <p class="hint">
+          Applied to every question. <em>Random</em> picks a fresh value
+          per question from Very Good, Good, or Poor.
+        </p>
+
+        <label class="toggle">
+          <input type="checkbox" id="fast" checked />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span class="toggle-text">Fast — snap through questions quickly</span>
+        </label>
+
+        <label class="toggle">
+          <input type="checkbox" id="continuous" checked />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span class="toggle-text">All at once — keep going until every pending evaluation is done</span>
+        </label>
+      </section>
+
+      <section class="field">
+        <div class="label-row">
+          <label class="label" for="comment">Comment</label>
+          <span class="badge badge-required">Required</span>
+        </div>
+        <textarea
+          id="comment"
+          class="control textarea"
+          rows="3"
+          placeholder="Type a comment to submit with every evaluation…"
+          maxlength="500"
+        ></textarea>
+        <div class="quick-fill" role="group" aria-label="Quick comment">
+          <button type="button" class="chip" data-comment="Very Good">Very Good</button>
+          <button type="button" class="chip" data-comment="Good">Good</button>
+          <button type="button" class="chip" data-comment="Poor">Poor</button>
+        </div>
+        <p class="hint"><span id="comment-count">0</span> / 500</p>
+      </section>
+    </div>
+
+    <footer class="dock" aria-live="polite">
+      <section class="log" aria-label="Activity log">
+        <div class="log-head">
+          <span class="log-title">
+            <span class="log-pulse" aria-hidden="true"></span>
+            Activity
+          </span>
+          <button id="log-clear" type="button" class="log-clear" title="Clear log">
+            Clear
+          </button>
+        </div>
+        <ol class="log-body" id="log-body">
+          <li class="log-empty">No activity yet — click Start to begin.</li>
+        </ol>
+      </section>
+
+      <div class="status-card">
+        <div class="status-row">
+          <span id="status-dot" class="dot dot-idle" aria-hidden="true"></span>
+          <span id="status" class="status-text">Idle.</span>
+        </div>
+        <div class="bar"><div id="bar-fill"></div></div>
+      </div>
+
+      <div class="actions">
+        <button id="start" class="btn btn-primary" title="Cmd/Ctrl + Enter">Start</button>
+        <button id="stop" class="btn btn-secondary" disabled title="Esc">Stop</button>
+      </div>
+
+      <p class="foot">⌘/Ctrl + Enter to start · Esc to stop</p>
+    </footer>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "BAUET Faculty Evaluation Automator",
+  "version": "3.3.1",
+  "description": "Automates the BAUET IEMS Faculty Performance Evaluation: clicks Start, fills radios with your chosen rating, writes a mandatory comment, and submits.",
+  "permissions": ["storage", "tabs", "scripting", "sidePanel"],
+  "host_permissions": [
+    "https://iems.bauet.ac.bd/*",
+    "http://iems.bauet.ac.bd/*"
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "action": {
+    "default_title": "BAUET Faculty Evaluator",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://iems.bauet.ac.bd/Student/FacultyEvaluation/*",
+        "http://iems.bauet.ac.bd/Student/FacultyEvaluation/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}
