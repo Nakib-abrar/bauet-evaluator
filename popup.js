@@ -13,6 +13,7 @@ const els = {
   statusDot: document.getElementById('status-dot'),
   bar: document.getElementById('bar-fill'),
   pageBanner: document.getElementById('page-banner'),
+  bannerLink: document.getElementById('banner-link'),
   themeToggle: document.getElementById('theme-toggle'),
   logBody: document.getElementById('log-body'),
   logClear: document.getElementById('log-clear'),
@@ -325,6 +326,11 @@ els.start.addEventListener('click', handleStart);
 els.stop.addEventListener('click', handleStop);
 els.themeToggle?.addEventListener('click', toggleTheme);
 els.logClear?.addEventListener('click', clearLog);
+els.bannerLink?.addEventListener('click', () => {
+  chrome.tabs.create({
+    url: 'https://iems.bauet.ac.bd/Student/FacultyEvaluation/FacultyEvaluationManager',
+  });
+});
 
 els.comment.addEventListener('input', updateCommentCount);
 

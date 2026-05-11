@@ -323,21 +323,25 @@ html, body {
   line-height: 1.45;
 }
 
-.banner-text a {
+.banner-btn {
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-warning);
   color: var(--color-warn-text);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
+  border: none;
+  border-radius: var(--r-input);
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
 
-.banner-text a:hover {
-  opacity: 0.7;
+.banner-btn:hover {
+  opacity: 0.85;
 }
 
-.banner-text a:active {
-  opacity: 0.5;
+.banner-btn:active {
+  opacity: 0.7;
 }
 
 @keyframes bannerIn {
