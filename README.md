@@ -1,5 +1,9 @@
 # BAUET Faculty Evaluation Automator
 
+[![Watch the demo](https://img.youtube.com/vi/AF9642FlvXU/maxresdefault.jpg)](https://youtu.be/AF9642FlvXU)
+
+> **▶ [Watch the 23-second demo on YouTube](https://youtu.be/AF9642FlvXU)** — see the extension auto-fill 14 evaluations in seconds.
+
 A Chrome Extension (Manifest V3) that automates the BAUET IEMS *Faculty
 Performance Evaluation* workflow at `iems.bauet.ac.bd`.
 
@@ -18,7 +22,7 @@ until none remain.
 
 - **Five-point rating selector** — Outstanding / Very Good / Good / Poor / Very Poor.
 - **Mandatory comment** — required for every submission (default: `comment`).
-- **Live status display** — `Evaluating 3 of 17 — ...`
+- **Live status display** — `Evaluating 3 of 17 …`
 - **Skips already-submitted evaluations** automatically.
 - **Resumes across page navigations** — state is stored in
   `chrome.storage.local`, so the run survives every `FacultyList ↔ Submit`
@@ -85,9 +89,8 @@ Then follow steps 3–6 above.
 5. Click **Start Automation**.
 6. Watch the live status — the side panel updates after every action.
    Because it's a side panel, **it stays open the whole time** so you
-   can see real-time progress, the 3-second submit countdown, and the
-   teacher name being processed. Click **Stop** at any point to halt
-   the run.
+   can see real-time progress and the 3-second submit countdown.
+   Click **Stop** at any point to halt the run.
 
 When all pending teachers are evaluated, the status will show
 `Done. Completed N of N evaluation(s).`
