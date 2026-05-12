@@ -51,9 +51,19 @@ bauet-evaluator/
 
 ## Installation
 
-### Quick install (latest release)
+### Option A — Bookmarklet (easiest, no install)
 
-The cleanest way — grab the packaged extension from the latest release:
+If you're not comfortable with Chrome extensions, use the bookmarklet version instead:
+
+1. Open the **[install page](https://nakib-abrar.github.io/bauet-evaluator/bookmarklet/install.html)**
+2. Drag the green **★ Faculty Evaluator** button to your bookmarks bar
+3. Visit `iems.bauet.ac.bd`, click the bookmark, allow pop-ups, set rating + comment, click Start
+
+No Chrome flags, no Developer mode, no extension permissions. Works in any modern browser.
+
+### Option B — Chrome Extension (full features, side panel)
+
+For the full side-panel experience with dark mode, activity log, and keyboard shortcuts:
 
 1. **[Download bauet-evaluator-v3.4.0.zip](https://github.com/Nakib-abrar/bauet-evaluator/releases/download/v3.4.0/bauet-evaluator-v3.4.0.zip)**
 2. Extract the ZIP — you'll get a `bauet-evaluator/` folder.
