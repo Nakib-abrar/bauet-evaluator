@@ -6,8 +6,6 @@
 
 ## Practical setup guide
 
-[![Watch the setup guide](https://img.youtube.com/vi/-tWrsMk-yls/maxresdefault.jpg)](https://youtu.be/-tWrsMk-yls)
-
 > **▶ [Step-by-step install & usage walkthrough](https://youtu.be/-tWrsMk-yls)** — exactly how to download, load unpacked, and run your first auto-evaluation.
 
 A Chrome Extension (Manifest V3) that automates the BAUET IEMS *Faculty
