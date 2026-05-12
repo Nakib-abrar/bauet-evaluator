@@ -6,7 +6,7 @@
 
 ## Practical setup guide
 
-> **▶ [Step-by-step install & usage walkthrough](https://youtu.be/-tWrsMk-yls)** *Must Watch* — exactly how to download, load unpacked, and run your first auto-evaluation.
+> **▶ [Step-by-step install & usage walkthrough](https://youtu.be/-tWrsMk-yls)** **(Must Watch)** — exactly how to download, load unpacked, and run your first auto-evaluation.
 
 A Chrome Extension (Manifest V3) that automates the BAUET IEMS *Faculty
 Performance Evaluation* workflow at `iems.bauet.ac.bd`.
