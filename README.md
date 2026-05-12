@@ -4,6 +4,12 @@
 
 > **▶ [Watch the full HD demo on YouTube](https://youtu.be/AF9642FlvXU)** — see the extension auto-fill 14 evaluations in seconds.
 
+## Practical setup guide
+
+[![Watch the setup guide](https://img.youtube.com/vi/-tWrsMk-yls/maxresdefault.jpg)](https://youtu.be/-tWrsMk-yls)
+
+> **▶ [Step-by-step install & usage walkthrough](https://youtu.be/-tWrsMk-yls)** — exactly how to download, load unpacked, and run your first auto-evaluation.
+
 A Chrome Extension (Manifest V3) that automates the BAUET IEMS *Faculty
 Performance Evaluation* workflow at `iems.bauet.ac.bd`.
 
