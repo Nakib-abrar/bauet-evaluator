@@ -43,10 +43,19 @@
   let stopped = false;
   let current = 0;
   let total = 0;
-  let lastUrl = '';
+  // URL we last finished processing — used to wait for navigation after a
+  // click before re-entering the page handler, otherwise the loop would
+  // see the stale URL and (e.g.) resubmit the same form or re-click the
+  // same Start button.
+  let lastProcessedUrl = '';
+  // Anti-loop guard: form URL we last submitted. If we land back on the
+  // same Submit URL (slow redirect, server-side validation), we know not
+  // to fire submit again.
+  let lastSubmittedUrl = '';
 
   const BAUET_HOST = 'iems.bauet.ac.bd';
   const FACULTY_LIST_PATH = '/Student/FacultyEvaluation/FacultyList';
+  const LOGIN_URL_RX = /\/(Account\/)?Login/i;
 
   function createIframeOverlay() {
     const overlay = document.createElement('div');
@@ -64,14 +73,31 @@
     overlayEl = overlay;
     iframeEl = iframe;
 
-    // Wrap iframe to look like the old `popup` object so the rest of the
-    // automation code (popup.document, popup.location, popup.closed) keeps working.
+    // Wrap iframe so the rest of the automation can keep using
+    // popup.document / popup.location / popup.closed semantics. Reads
+    // are guarded — accessing a navigating iframe can throw transient
+    // SecurityError or expose null contentDocument.
     return {
       get document() {
-        return iframe.contentDocument;
+        try {
+          return iframe.contentDocument;
+        } catch {
+          return null;
+        }
       },
       get location() {
-        return iframe.contentWindow ? iframe.contentWindow.location : { href: '' };
+        try {
+          return iframe.contentWindow ? iframe.contentWindow.location : null;
+        } catch {
+          return null;
+        }
+      },
+      get href() {
+        try {
+          return iframe.contentWindow ? iframe.contentWindow.location.href : '';
+        } catch {
+          return '';
+        }
       },
       get closed() {
         return !iframe.isConnected;
@@ -80,6 +106,33 @@
         teardownIframeOverlay();
       },
     };
+  }
+
+  // Probe whether the iframe is reachable from the parent. Returns:
+  //   'ok'        — same-origin doc is accessible
+  //   'blocked'   — load fired but doc unreadable (X-Frame-Options /
+  //                 frame-ancestors / cross-origin redirect)
+  //   'login'     — iframe redirected to a login page
+  //   'pending'   — still loading; try again later
+  async function probeIframe(timeoutMs = 12000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      if (stopped || !popup || popup.closed) return 'blocked';
+      const doc = popup.document;
+      const href = popup.href;
+      // about:blank means the iframe element exists but the BAUET page
+      // hasn't started rendering yet. Keep waiting.
+      if (href && href !== 'about:blank') {
+        if (LOGIN_URL_RX.test(href)) return 'login';
+        if (doc && doc.body && doc.body.childElementCount > 0) return 'ok';
+      }
+      await sleep(150);
+    }
+    // Final classification on timeout.
+    const doc = popup ? popup.document : null;
+    if (!doc) return 'blocked';
+    if (LOGIN_URL_RX.test(popup.href)) return 'login';
+    return 'pending';
   }
 
   function teardownIframeOverlay() {
@@ -119,6 +172,22 @@
       };
       check();
     });
+  }
+
+  // Wait until the iframe's URL stops matching `fromUrl` (i.e. navigation
+  // has actually happened). Returns the new URL, or null on timeout. We
+  // strip the query string when comparing so search-param-only changes
+  // (e.g. anti-cache tokens) don't fool us, but a true page change does.
+  function waitForUrlChange(fromUrl, timeout = 20000) {
+    const stripped = (u) => (u || '').split('#')[0];
+    const baseFrom = stripped(fromUrl);
+    return waitFor(() => {
+      const cur = stripped(popup ? popup.href : '');
+      if (!cur || cur === 'about:blank') return null;
+      // Navigation finished AND we're on a sensibly different URL.
+      if (cur !== baseFrom) return cur;
+      return null;
+    }, timeout);
   }
 
   function fireInput(el) {
@@ -404,62 +473,117 @@
     stopped = false;
     current = 0;
     total = 0;
+    lastProcessedUrl = '';
+    lastSubmittedUrl = '';
     startBtn.disabled = true;
     stopBtn.disabled = false;
     setStatus(statusEl, 'Loading FacultyList…');
 
     popup = createIframeOverlay();
 
-    // Drive loop
     try {
+      // First load — make sure the iframe actually rendered something we
+      // can drive (not a login redirect, not blocked by X-Frame-Options).
+      const probe = await probeIframe();
+      if (probe === 'login') {
+        setStatus(
+          statusEl,
+          '⚠ You are not logged in to BAUET. Log in in this tab, then click Start again.',
+        );
+        return;
+      }
+      if (probe === 'blocked') {
+        setStatus(
+          statusEl,
+          '⚠ Could not load the FacultyList in-page. The site may be blocking iframes — try the Chrome extension version.',
+        );
+        return;
+      }
+      if (probe === 'pending') {
+        setStatus(statusEl, '⚠ FacultyList took too long to load. Try Start again.');
+        return;
+      }
+
       while (!stopped) {
-        // Wait for popup to be ready and on a page we know
+        // Identify which page the iframe is currently on. Wait long
+        // enough for any in-flight navigation to settle.
         const pageType = await waitFor(() => {
           if (!popup || popup.closed) return 'closed';
-          try {
-            const url = popup.location.href;
-            if (/FacultyList/i.test(url)) return 'list';
-            if (/Submit/i.test(url)) return 'submit';
-          } catch {
-            return null; // cross-origin during navigation
-          }
+          const url = popup.href;
+          if (!url || url === 'about:blank') return null;
+          if (LOGIN_URL_RX.test(url)) return 'login';
+          if (/\/FacultyEvaluation\/Submit/i.test(url)) return 'submit';
+          if (/\/FacultyEvaluation\/FacultyList/i.test(url)) return 'list';
           return null;
         }, 30000);
 
-        if (pageType === 'closed' || !pageType) {
-          setStatus(statusEl, '✓ Done or window closed.');
+        if (!pageType || pageType === 'closed') {
+          setStatus(statusEl, '⚠ Iframe closed or navigation timed out.');
+          break;
+        }
+        if (pageType === 'login') {
+          setStatus(statusEl, '⚠ Session expired. Log in again, then restart.');
           break;
         }
 
-        if (pageType === 'list') {
-          const result = await handleListPage(statusEl, barEl);
-          if (result === 'done') {
-            setStatus(statusEl, '✓ All pending evaluations completed!');
+        // Race guard: the page handler we're about to run was the same
+        // one we ran last iteration. The click hasn't navigated yet —
+        // wait for the URL to change before re-entering, or we'll
+        // re-click Start / re-submit the same form.
+        if (lastProcessedUrl && popup.href === lastProcessedUrl) {
+          const moved = await waitForUrlChange(lastProcessedUrl, 25000);
+          if (!moved) {
+            setStatus(
+              statusEl,
+              '⚠ The page did not navigate after the last action. Stopping.',
+            );
             break;
           }
-          if (result === 'stopped') break;
-        } else if (pageType === 'submit') {
-          const result = await handleSubmitPage(statusEl, barEl);
-          if (result === 'stopped') break;
+          continue; // re-classify the new URL
         }
+
+        const here = popup.href;
+        let result;
+        if (pageType === 'list') {
+          result = await handleListPage(statusEl, barEl);
+        } else {
+          result = await handleSubmitPage(statusEl, barEl);
+        }
+        lastProcessedUrl = here;
+
+        if (result === 'done') {
+          setStatus(statusEl, `✓ All pending evaluations completed (${current}/${total}).`);
+          setProgress(barEl, total, total);
+          break;
+        }
+        if (result === 'stopped') {
+          setStatus(statusEl, 'Stopped.');
+          break;
+        }
+        if (result === 'error') break; // status already set by handler
       }
     } catch (err) {
-      setStatus(statusEl, '⚠ Error: ' + (err.message || err));
+      setStatus(statusEl, '⚠ Error: ' + (err && err.message ? err.message : err));
     } finally {
       startBtn.disabled = false;
       stopBtn.disabled = true;
-      // Keep the iframe visible for a moment so the user can see the final state,
-      // then tear it down so the underlying FacultyList shows again.
-      setTimeout(() => teardownIframeOverlay(), 1500);
+      // Leave the iframe up for a moment so the user sees the final
+      // state, then tear it down. Don't auto-tear if a login error is
+      // showing — let the user finish reading.
+      setTimeout(() => teardownIframeOverlay(), 2000);
     }
   }
 
   async function handleListPage(statusEl, barEl) {
     setStatus(statusEl, 'Looking for pending evaluations…');
 
-    // Wait for table rows to render
+    // Wait for at least one data row in any table to render. Resolving
+    // on an empty table shell would make us declare "done" before the
+    // rows finish painting.
     const ready = await waitFor(() => {
-      const cell = popup.document.querySelector('table tbody tr td, table tr td');
+      const doc = popup.document;
+      if (!doc) return null;
+      const cell = doc.querySelector('table tbody tr td, table tr td');
       return cell ? true : null;
     }, 20000);
 
@@ -468,52 +592,98 @@
       return 'error';
     }
 
-    await sleep(300);
+    // Tiny settling pause so deferred row scripts (e.g. action-cell
+    // anchor injection) can finish.
+    await sleep(200);
 
-    // Find pending row with enabled Start button
-    const rows = Array.from(popup.document.querySelectorAll('table tr'));
-    let pending = [];
+    const doc = popup.document;
+    const rows = Array.from(doc.querySelectorAll('table tr'));
+    const pending = [];
     let completed = 0;
+
     for (const row of rows) {
-      const text = row.textContent || '';
-      const btn = row.querySelector('button, input[type=button], a[onclick]');
-      if (!btn) continue;
-      const btnText = normalize(btn.textContent || btn.value || '');
-      const rowNorm = normalize(text);
-      if (/complete|submitted|done|evaluated/i.test(rowNorm) && !/pending/i.test(rowNorm)) {
+      // Header rows have no <td>.
+      if (!row.querySelector('td')) continue;
+
+      const rowText = normalize(row.innerText || row.textContent || '');
+
+      // Word-boundary completion check — keeps a teacher named
+      // "Mr. Done" or a course like "Composite Materials" from being
+      // mis-flagged.
+      const looksDone =
+        /\b(complete|completed|submitted|done|evaluated)\b/.test(rowText) &&
+        !/\bpending\b/.test(rowText);
+
+      // Find the action element. Plain <a href> works too — earlier we
+      // required `[onclick]` and missed link-style Start buttons.
+      const actionEl = Array.from(
+        row.querySelectorAll(
+          'a, button, input[type=button], input[type=submit]',
+        ),
+      ).find((el) => {
+        if (el.disabled) return false;
+        // offsetParent === null catches display:none / detached.
+        if (el.offsetParent === null && el.tagName !== 'A') return false;
+        const t = normalize(el.innerText || el.value || el.textContent || '');
+        return t === 'start' || t.startsWith('start');
+      });
+
+      if (looksDone) {
         completed++;
         continue;
       }
-      if (/^start$/i.test(btnText) || /start/i.test(btnText)) {
-        pending.push({ row, btn });
-      }
+      if (actionEl) pending.push({ row, btn: actionEl });
     }
 
     total = pending.length + completed;
+    // Show progress as completed-so-far (not in-flight).
     setProgress(barEl, completed, total);
 
     if (pending.length === 0) {
+      current = completed;
       return 'done';
     }
 
     current = completed + 1;
     setStatus(statusEl, `Starting evaluation ${current} of ${total}…`);
 
-    // Click the first pending Start button
     await jitter();
     if (stopped) return 'stopped';
+
+    // Snapshot URL before the click so the outer loop can detect that
+    // navigation has actually happened.
     pending[0].btn.click();
     return 'next';
   }
 
   async function handleSubmitPage(statusEl, barEl) {
+    // Anti-resubmit guard. If we already fired Submit on this exact
+    // form URL but got bounced back here (slow redirect, server-side
+    // validation), don't refill + resubmit — that's how you accidentally
+    // submit the same evaluation twice.
+    const submitKey = popup.href;
+    if (lastSubmittedUrl && lastSubmittedUrl === submitKey) {
+      setStatus(statusEl, 'Submit acknowledged — returning to FacultyList…');
+      try {
+        popup.location.replace(FACULTY_LIST_PATH);
+      } catch {
+        if (iframeEl) iframeEl.src = FACULTY_LIST_PATH;
+      }
+      lastSubmittedUrl = '';
+      return 'next';
+    }
+
     setStatus(statusEl, `Filling evaluation ${current} of ${total}…`);
 
-    // Wait for form to render
+    // Wait for the form to fully render — radios + textarea + submit
+    // button all present.
     const ready = await waitFor(() => {
-      const radio = popup.document.querySelector('input[type=radio]');
-      const submit = popup.document.querySelector('button[type=submit], input[type=submit], button');
-      return radio && submit ? true : null;
+      const doc = popup.document;
+      if (!doc) return null;
+      const radio = doc.querySelector('input[type=radio]');
+      const ta = findCommentField();
+      const submit = findSubmitButton();
+      return radio && ta && submit ? true : null;
     }, 20000);
 
     if (!ready) {
@@ -521,69 +691,102 @@
       return 'error';
     }
 
-    await sleep(300);
+    await sleep(200);
 
-    // Group radios by name
-    const radios = Array.from(popup.document.querySelectorAll('input[type=radio]:not([disabled])'));
+    const doc = popup.document;
+    // Group radios by name.
+    const radios = Array.from(doc.querySelectorAll('input[type=radio]:not([disabled])'));
     const groups = {};
     for (const r of radios) {
-      const name = r.name;
+      const name = r.name || r.getAttribute('data-name') || '';
       if (!name) continue;
       if (!groups[name]) groups[name] = [];
       groups[name].push(r);
     }
+    const groupNames = Object.keys(groups);
+    if (groupNames.length === 0) {
+      setStatus(statusEl, '⚠ No radio questions found.');
+      return 'error';
+    }
 
-    // Build longest-match-first rating lookup
+    // Longest-rating-first match: prevents "Good" from accidentally
+    // matching the "Very Good" label via .includes().
     const ratingsByLength = [...RATINGS].sort((a, b) => b.length - a.length);
 
     let filled = 0;
-    for (const name in groups) {
+    for (const name of groupNames) {
       if (stopped) return 'stopped';
       const group = groups[name];
       const chosen = ratingForQuestion(settings.rating);
 
-      // For each radio, find its label, normalize, and bucket
       const buckets = {};
       for (const radio of group) {
-        const label = labelFor(radio);
-        const labelNorm = normalize(label);
+        const labelNorm = normalize(labelFor(radio));
         let matched = null;
+        // Prefer exact label match, then includes (longest first).
         for (const r of ratingsByLength) {
-          const rNorm = normalize(r);
-          if (labelNorm === rNorm || labelNorm.includes(rNorm)) {
-            matched = r;
-            break;
+          if (labelNorm === normalize(r)) { matched = r; break; }
+        }
+        if (!matched) {
+          for (const r of ratingsByLength) {
+            if (labelNorm.includes(normalize(r))) { matched = r; break; }
           }
         }
         if (matched && !buckets[matched]) buckets[matched] = radio;
       }
 
-      // Pick the one matching chosen rating, or fall through
+      // Try chosen rating first, then fall through the rating list.
       const fallback = [chosen, ...RATINGS.filter((r) => r !== chosen)];
       let picked = null;
       for (const r of fallback) {
-        if (buckets[r]) {
-          picked = buckets[r];
-          break;
-        }
+        if (buckets[r]) { picked = buckets[r]; break; }
       }
-      if (!picked) picked = group[Math.min(RATINGS.indexOf(chosen), group.length - 1)] || group[0];
+      // Last resort: 5-point index alignment so we never leave a Q blank.
+      if (!picked) {
+        const idx = RATINGS.indexOf(chosen);
+        picked = group[idx] || group[0];
+      }
 
-      picked.checked = true;
-      fireInput(picked);
+      // Click first (user-equivalent), then force checked if the click
+      // was intercepted by a custom control. Avoids the inverse case
+      // where setting .checked = true synthetically fails to fire the
+      // framework's change handler.
       picked.click();
+      if (!picked.checked) {
+        picked.checked = true;
+        fireInput(picked);
+      }
       filled++;
       await jitter();
     }
 
-    // Fill comment
-    const ta = findCommentField();
-    if (ta && settings.comment.trim()) {
-      setNativeValue(ta, settings.comment.trim());
-      await sleep(200);
-    }
+    if (stopped) return 'stopped';
 
-    // Submit
+    // Fill the comment.
+    const ta = findCommentField();
+    const comment = (settings.comment || '').trim();
+    if (!ta) {
+      setStatus(statusEl, '⚠ Comment field not found.');
+      return 'error';
+    }
+    if (!comment) {
+      setStatus(statusEl, '⚠ Comment is empty.');
+      return 'error';
+    }
+    ta.focus();
+    setNativeValue(ta, comment);
+    // Verify it stuck — if a framework re-cleared it, retry once.
+    if (ta.value !== comment) {
+      await sleep(150);
+      setNativeValue(ta, comment);
+    }
+    if (!ta.value || !ta.value.trim()) {
+      setStatus(statusEl, '⚠ Could not write into the comment field.');
+      return 'error';
+    }
+    await sleep(200);
+
+    // Submit.
     const submitBtn = findSubmitButton();
     if (!submitBtn) {
       setStatus(statusEl, '⚠ No submit button found.');
@@ -591,43 +794,98 @@
     }
 
     setStatus(statusEl, `Submitting evaluation ${current} of ${total}…`);
-    await sleep(800);
+    await sleep(settings.fast ? 400 : 800);
     if (stopped) return 'stopped';
-    submitBtn.click();
 
-    setProgress(barEl, current, total);
+    // Record what we're about to submit BEFORE the click, so the guard
+    // at the top of this function fires correctly if the page bounces
+    // us back.
+    lastSubmittedUrl = submitKey;
+    submitBtn.click();
     return 'next';
   }
 
   function labelFor(radio) {
-    if (radio.id) {
-      const lbl = popup.document.querySelector(`label[for="${radio.id}"]`);
-      if (lbl) return lbl.textContent || '';
+    const doc = popup ? popup.document : null;
+    if (radio.id && doc) {
+      // Use CSS.escape so IDs containing dots/colons (common in
+      // server-generated names) don't break the selector.
+      const safeId = (window.CSS && CSS.escape) ? CSS.escape(radio.id) : radio.id;
+      try {
+        const lbl = doc.querySelector(`label[for="${safeId}"]`);
+        if (lbl) return lbl.textContent || '';
+      } catch {}
     }
+    // Wrapping <label> next.
+    if (radio.closest) {
+      const wrap = radio.closest('label');
+      if (wrap) return wrap.textContent || '';
+    }
+    // Fall back to the nearest meaningful container.
     let p = radio.parentElement;
-    while (p && p.tagName !== 'LABEL' && p.tagName !== 'TR' && p.tagName !== 'TD') p = p.parentElement;
+    while (p && p.tagName !== 'LABEL' && p.tagName !== 'TR' && p.tagName !== 'TD') {
+      p = p.parentElement;
+    }
     return p ? p.textContent || '' : '';
   }
 
   function findCommentField() {
-    const candidates = Array.from(popup.document.querySelectorAll('textarea:not([disabled]):not([readonly])'));
-    if (candidates.length === 0) return null;
-    // Prefer textarea with name/id mentioning comment
-    for (const t of candidates) {
-      const id = (t.id || '').toLowerCase();
-      const name = (t.name || '').toLowerCase();
-      if (/comment|remark|feedback/i.test(id + ' ' + name)) return t;
+    const doc = popup ? popup.document : null;
+    if (!doc) return null;
+    const usable = (ta) =>
+      ta && !ta.disabled && !ta.readOnly && ta.offsetParent !== null;
+
+    // 1) name/id hints.
+    const named = Array.from(
+      doc.querySelectorAll(
+        'textarea[name*="comment" i], textarea[id*="comment" i],' +
+          'textarea[name*="remark" i], textarea[id*="remark" i],' +
+          'textarea[name*="feedback" i], textarea[id*="feedback" i],' +
+          'textarea[name*="review" i], textarea[id*="review" i]',
+      ),
+    ).find(usable);
+    if (named) return named;
+
+    // 2) anchored to a "Comment" label.
+    const labelEls = Array.from(doc.querySelectorAll('label, span, div, b, strong, p')).filter((el) =>
+      /^\s*comment\s*[:*]?\s*$/i.test((el.textContent || '').trim()),
+    );
+    for (const lbl of labelEls) {
+      const forId = lbl.getAttribute && lbl.getAttribute('for');
+      if (forId) {
+        const ta = doc.getElementById(forId);
+        if (ta && ta.tagName === 'TEXTAREA' && usable(ta)) return ta;
+      }
+      let parent = lbl.parentElement;
+      for (let i = 0; i < 4 && parent; i++) {
+        const ta = parent.querySelector('textarea');
+        if (ta && usable(ta)) return ta;
+        parent = parent.parentElement;
+      }
     }
-    return candidates[0];
+
+    // 3) any textarea inside the form.
+    const inForm = Array.from(doc.querySelectorAll('form textarea')).find(usable);
+    if (inForm) return inForm;
+
+    // 4) last resort.
+    return Array.from(doc.querySelectorAll('textarea')).find(usable) || null;
   }
 
   function findSubmitButton() {
-    const direct = popup.document.querySelector('button[type=submit], input[type=submit]');
-    if (direct) return direct;
-    const buttons = Array.from(popup.document.querySelectorAll('button, input[type=button]'));
-    for (const b of buttons) {
+    const doc = popup ? popup.document : null;
+    if (!doc) return null;
+    // Prefer explicit submit controls.
+    const direct = doc.querySelector('button[type=submit], input[type=submit]');
+    if (direct && !direct.disabled) return direct;
+    // Otherwise look for a button whose label says "Submit".
+    const candidates = Array.from(
+      doc.querySelectorAll('form button, button, input[type=button]'),
+    );
+    for (const b of candidates) {
+      if (b.disabled) continue;
       const t = normalize(b.textContent || b.value || '');
-      if (/^submit$/i.test(t) || /save.*submit|submit.*evaluation/i.test(t)) return b;
+      if (t === 'submit' || /\bsubmit\b/.test(t)) return b;
     }
     return null;
   }
