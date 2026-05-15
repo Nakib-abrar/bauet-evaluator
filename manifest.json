@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "BAUET Faculty Evaluation Automator",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "description": "Automates the BAUET IEMS Faculty Performance Evaluation: clicks Start, fills radios with your chosen rating, writes a mandatory comment, and submits.",
   "permissions": ["storage", "tabs", "scripting", "sidePanel"],
   "host_permissions": [

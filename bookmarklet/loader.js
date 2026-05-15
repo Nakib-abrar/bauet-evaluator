@@ -53,6 +53,7 @@
   // to fire submit again.
   let lastSubmittedUrl = '';
 
+  const VERSION = '3.7.2';
   const BAUET_HOST = 'iems.bauet.ac.bd';
   const FACULTY_LIST_PATH = '/Student/FacultyEvaluation/FacultyList';
   const LOGIN_URL_RX = /\/(Account\/)?Login/i;
@@ -391,7 +392,7 @@
       <div class="bb-bar"><div class="bb-bar-fill" id="bb-bar"></div></div>
 
       <div class="bb-footer">
-        BAUET Faculty Evaluator · <a href="https://github.com/Nakib-abrar/bauet-evaluator" target="_blank">View on GitHub</a>
+        BAUET Faculty Evaluator v${VERSION} · <a href="https://github.com/Nakib-abrar/bauet-evaluator" target="_blank">View on GitHub</a>
       </div>
     `;
 
