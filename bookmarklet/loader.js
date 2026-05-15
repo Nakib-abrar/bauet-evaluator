@@ -38,10 +38,55 @@
 
   let settings = loadSettings();
   let popup = null;
+  let overlayEl = null;
+  let iframeEl = null;
   let stopped = false;
   let current = 0;
   let total = 0;
   let lastUrl = '';
+
+  const BAUET_HOST = 'iems.bauet.ac.bd';
+  const FACULTY_LIST_PATH = '/Student/FacultyEvaluation/FacultyList';
+
+  function createIframeOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'bauet-bookmarklet-overlay';
+    overlay.style.cssText =
+      'position:fixed;inset:0;z-index:2147483646;background:rgba(14,15,12,0.55);backdrop-filter:blur(2px);';
+
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText =
+      'position:absolute;top:20px;left:20px;right:380px;bottom:20px;width:calc(100% - 400px);height:calc(100% - 40px);border:0;border-radius:14px;background:#fff;box-shadow:0 24px 60px rgba(0,0,0,0.45);';
+    iframe.src = FACULTY_LIST_PATH;
+    overlay.appendChild(iframe);
+    document.body.appendChild(overlay);
+
+    overlayEl = overlay;
+    iframeEl = iframe;
+
+    // Wrap iframe to look like the old `popup` object so the rest of the
+    // automation code (popup.document, popup.location, popup.closed) keeps working.
+    return {
+      get document() {
+        return iframe.contentDocument;
+      },
+      get location() {
+        return iframe.contentWindow ? iframe.contentWindow.location : { href: '' };
+      },
+      get closed() {
+        return !iframe.isConnected;
+      },
+      close() {
+        teardownIframeOverlay();
+      },
+    };
+  }
+
+  function teardownIframeOverlay() {
+    if (overlayEl && overlayEl.parentNode) overlayEl.parentNode.removeChild(overlayEl);
+    overlayEl = null;
+    iframeEl = null;
+  }
 
   // ============================================================
   // Constants & helpers
@@ -248,7 +293,7 @@
         <div class="bb-title">Faculty<br>Evaluator</div>
         <button class="bb-close" id="bb-close" title="Close">×</button>
       </div>
-      <p class="bb-lede">Auto-fill &amp; submit every pending evaluation. No install — opens a controlled window.</p>
+      <p class="bb-lede">Auto-fill &amp; submit every pending evaluation. Runs inside this page — no popups.</p>
 
       <label class="bb-label" for="bb-rating">Rating</label>
       <select id="bb-rating">
@@ -317,7 +362,7 @@
     });
     closeBtn.addEventListener('click', () => {
       stopped = true;
-      if (popup && !popup.closed) popup.close();
+      teardownIframeOverlay();
       root.remove();
       window.__bauetBookmarkletLoaded = false;
     });
@@ -348,25 +393,22 @@
       return;
     }
 
+    if (location.hostname !== BAUET_HOST) {
+      setStatus(
+        statusEl,
+        '⚠ Open this on https://iems.bauet.ac.bd first, then click the bookmark.',
+      );
+      return;
+    }
+
     stopped = false;
     current = 0;
     total = 0;
     startBtn.disabled = true;
     stopBtn.disabled = false;
-    setStatus(statusEl, 'Opening FacultyList…');
+    setStatus(statusEl, 'Loading FacultyList…');
 
-    popup = window.open(
-      'https://iems.bauet.ac.bd/Student/FacultyEvaluation/FacultyList',
-      'bauet-bookmarklet',
-      'width=1280,height=900',
-    );
-
-    if (!popup) {
-      setStatus(statusEl, '⚠ Popup blocked. Allow popups for this site and try again.');
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-      return;
-    }
+    popup = createIframeOverlay();
 
     // Drive loop
     try {
@@ -406,6 +448,9 @@
     } finally {
       startBtn.disabled = false;
       stopBtn.disabled = true;
+      // Keep the iframe visible for a moment so the user can see the final state,
+      // then tear it down so the underlying FacultyList shows again.
+      setTimeout(() => teardownIframeOverlay(), 1500);
     }
   }
 
